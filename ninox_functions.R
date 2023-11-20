@@ -18,8 +18,8 @@ process_all <- function(file_name, nom_site, sun_alt_min = SUN_ALT_MIN, diff_sqm
   # Selection des meilleurs nuits
   best_night <- get_best_night(all_data, nb_flat_day = NULL, nb_best_day = NULL,  sun_alt_min, diff_sqm_mag, min_sqm_mag_val, max_sqm_mag_val)
 
-  flat_night <- get_best_night(data_in, nb_flat_day = 10, nb_best_day = NULL, sun_alt_min, diff_sqm_mag, min_sqm_mag_val, max_sqm_mag_val)
-  the_best_night<- get_best_night(data_in, nb_flat_day = 10, nb_best_day = 1, sun_alt_min, diff_sqm_mag, min_sqm_mag_val, max_sqm_mag_val)
+  flat_night <- get_best_night(all_data, nb_flat_day = 10, nb_best_day = NULL, sun_alt_min, diff_sqm_mag, min_sqm_mag_val, max_sqm_mag_val)
+  the_best_night<- get_best_night(all_data, nb_flat_day = 10, nb_best_day = 1, sun_alt_min, diff_sqm_mag, min_sqm_mag_val, max_sqm_mag_val)
 
 
   # # #########################################
@@ -258,7 +258,7 @@ generate_graph_density_all_data <- function(all_night, best_night, flat_night, t
     ggtitle(
       sprintf("NINOX %s %s", nom_site, sous_titre),
     ) +
-    geom_point(data=data_in, aes(x = heure_graph, y = sqm_mag, color='#d3d2d2'), size = 00.1)+
+    geom_point(data=all_night, aes(x = heure_graph, y = sqm_mag, color='#d3d2d2'), size = 00.1)+
     geom_point(aes(x = heure_graph, y = sqm_mag, color = "red"), size = 00.1)+
     geom_point(data=flat_night, aes(x = heure_graph, y = sqm_mag, color = "green"),  size = 00.1) +
     geom_point(data=the_best_night, aes(x = heure_graph, y = sqm_mag, color='blue'), size = 00.1)   +

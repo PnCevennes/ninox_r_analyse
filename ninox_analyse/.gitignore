@@ -1,0 +1,22 @@
+
+# Environnements
+.venv/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Build/Dist
+build/
+dist/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+
+# IDE
+.idea/
+.vscode/

@@ -12,8 +12,10 @@ MIN_SQM_MAG_VAL <- 21
 MAX_SQM_MAG_VAL <- 22.2
 # Différence maximale entre sqm_mag min et max par nuit utilisée pour filtrer les données
 DIFF_SQM_MAG <- 1
+# Désactivation par défaut du calcul des graphiques de ensité par nuit
+GET_GRAPH_PER_NIGHT <- FALSE
 
-process_all <- function(file_name, nom_site, format="csv", year=NULL, sun_alt_min = SUN_ALT_MIN, diff_sqm_mag = DIFF_SQM_MAG, min_sqm_mag_val = MIN_SQM_MAG_VAL, max_sqm_mag_val = MAX_SQM_MAG_VAL) {
+process_all <- function(file_name, nom_site, format="csv", year=NULL, sun_alt_min = SUN_ALT_MIN, diff_sqm_mag = DIFF_SQM_MAG, min_sqm_mag_val = MIN_SQM_MAG_VAL, max_sqm_mag_val = MAX_SQM_MAG_VAL, get_graph_per_night = GET_GRAPH_PER_NIGHT) {
   # Chargement et prétraitrement du fichier
   if (format == "csv") {
     all_data <- load_and_process_file_csv(file_name, year)
@@ -30,18 +32,28 @@ process_all <- function(file_name, nom_site, format="csv", year=NULL, sun_alt_mi
   # Selection des nuits dans lune
   data_without_moon <- subset(x = all_data, subset = moon_alt < 0)
 
+  print(sprintf("nb all_data : %s", nrow(all_data)))
+  print(sprintf("nb best_night : %s", nrow(best_night)))
+  print(sprintf("nb flat_night : %s", nrow(flat_night)))
+  print(sprintf("nb the_best_night : %s", nrow(the_best_night)))
+
   # # #########################################
   # # Rapport du lot de données
   stats <- calculate_stats_data(all_data)
   print_report(stats, file_name, nom_site)
  
   # Génération des graphiques
-  generate_graph(best_night, nom_site, "", stats$sqm_mag_mod)
+  generate_graph(best_night, nom_site, "Meilleures nuits", stats$sqm_mag_mod)
   generate_graph(all_data, nom_site, "All data", stats$sqm_mag_mod)
   generate_graph_density_heatmap(data_without_moon, nom_site, "Nuits sans lune", stats$sqm_mag_mod)
-  generate_graph_density(the_best_night, nom_site, sprintf("%s", min(as.Date(the_best_night$date))))
+  generate_graph_density(the_best_night, nom_site, sprintf("La_meilleure_nuit-%s", min(as.Date(the_best_night$date))))
 
   generate_graph_density_all_data(all_data, best_night, flat_night, the_best_night, nom_site )
+
+  # LLP : Ajout du traitement générant les graph pour chaque nuit
+  if (get_graph_per_night) {
+    generate_graph_per_nigth(all_data, nom_site)
+  }
 
 }
 
@@ -213,13 +225,18 @@ get_best_night <- function(data_in, nb_flat_day = NULL, nb_best_day = NULL, sun_
 
   data_without_sun <- subset(x = data_in, subset = sun_alt < sun_alt_min)
 
+
   # Ajout de la valeur absolue de la dérivée de sqm_mag (cia fonction diff) en fonction de la nuit
+  # LLP : Pour chaque ligne il calcul la différence entre le sqm_mag courant et celui de la ligne précédente -> la moyenne de ça par nuit donnant une idée du niveau de variabilité
   data_without_sun <- transform(
       data_without_sun,
       abs_derive = ave(sqm_mag, julian_night, FUN = function(x) c(NA, abs(diff(x))))
   )
 
+
   agg_tbl <- generate_aggrate_per_night(data_without_sun)
+  
+  write.csv(agg_tbl, "tmp.csv")
   # Selection des nuits avec les "meilleurs" valeur :
   #   diff entre min et max < 1
   #   et valeurs comprises entre 21 et 22.8
@@ -245,6 +262,46 @@ get_best_night <- function(data_in, nb_flat_day = NULL, nb_best_day = NULL, sun_
       subset = data_in$julian_night %in% selection
     )
   return(best_night)
+}
+
+
+generate_graph_per_nigth <- function(data_in, nom_site) {
+  # #########################################
+  # GRAPHIQUE
+  # Graphique de densité pour chaque nuit
+
+  #Création du dossier de destination
+  dir.create("par_nuits", showWarnings = FALSE)
+
+  #Extraction des numéros de nuit unique
+  unique_julian_night <- unique(data_in$julian_night)
+
+  # Loop sur chaque nuit
+  nigth_idx <- 1
+  for (d in unique_julian_night) {
+    # Extraction des données correspondant au numéro de nuit
+    one_night_data <- data_in[data_in$julian_night == d, ]
+
+    sous_titre = sprintf("Nuit-%s", nigth_idx)
+    title_nb_nights = sprintf("\nDu %s/%s/%s au %s/%s/%s", first(one_night_data$d), first(one_night_data$m), first(one_night_data$y), last(one_night_data$d), last(one_night_data$m), last(one_night_data$y)) # Idélament, changer la valeur en "nuit du jj/MM/yyyy au jj/MM/yyyy"
+
+    plot <- ggplot(one_night_data) +
+    geom_line(aes(x = heure_graph, y = sqm_mag)) +
+    geom_point(aes(x = heure_graph, y = sqm_mag)) +
+    scale_y_reverse(breaks = seq(23,16,-1),limits=c(23,16)) +
+    ylab("NSB (magsqm/arsec²)") +
+    xlab("Time (UTC)") +
+    ggtitle(sprintf("NINOX %s %s %s", nom_site, sous_titre, title_nb_nights))
+  
+    # Sauvegarde le graphique en fichier PNG
+    ggsave(plot,
+      filename = gsub(" ", "_", sprintf("par_nuits/%s_%s_densite.jpg", nom_site, sous_titre)),
+      device = "jpg",
+      height = 6, width = 5, units = "in"
+    )
+
+    nigth_idx <- nigth_idx + 1
+  }
 }
 
 generate_graph <- function(data_in, nom_site, sous_titre, valeur_modal) {

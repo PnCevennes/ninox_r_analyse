@@ -2,6 +2,9 @@
 .Rhistory
 .Rapp.history
 
+# backup files
+*.BAK
+
 # Session Data files
 .RData
 .RDataTmp

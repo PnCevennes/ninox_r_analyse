@@ -111,6 +111,8 @@ sqm_mag_mod <- get_modal_sqm_mag_value(all_data)
 # Génération des graphiques
 generate_graph(best_night, NOM_SITE, "meilleures nuits", sqm_mag_mod)
 generate_graph(all_data, NOM_SITE, "toutes les nuits", sqm_mag_mod)
+# Génération d'un graphique de densité par nuit
+generate_graph_per_nigth(all_data, NOM_SITE)
 ```
 
 # Constantes
@@ -125,12 +127,14 @@ MIN_SQM_MAG_VAL <- 21
 MAX_SQM_MAG_VAL <- 22.2
 # Différence maximale entre sqm_mag min et max par nuit utilisée pour filtrer les données
 DIFF_SQM_MAG <- 1
+# Désactivation par défaut du calcul des graphiques de densité par nuit
+GET_GRAPH_PER_NIGHT <- FALSE
 ```
 
 Ces valeurs peuvent être changées lors de l'appel aux fonctions
 ```R
-# Fonction globale
-process_all(file_name, nom_site, sun_alt_min = SUN_ALT_MIN, diff_sqm_mag = DIFF_SQM_MAG, min_sqm_mag_val = MIN_SQM_MAG_VAL, max_sqm_mag_val = MAX_SQM_MAG_VAL)
+# Fonction globale 
+process_all(file_name, nom_site, sun_alt_min = SUN_ALT_MIN, diff_sqm_mag = DIFF_SQM_MAG, min_sqm_mag_val = MIN_SQM_MAG_VAL, max_sqm_mag_val = MAX_SQM_MAG_VAL, get_graph_per_night = GET_GRAPH_PER_NIGHT)
 
 # Fonction de calcul des "meilleures nuits"
 get_best_night(data_in, sun_alt_min = SUN_ALT_MIN, diff_sqm_mag = DIFF_SQM_MAG, min_sqm_mag_val = MIN_SQM_MAG_VAL, max_sqm_mag_val = MAX_SQM_MAG_VAL)
